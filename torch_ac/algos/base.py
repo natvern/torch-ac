@@ -150,20 +150,19 @@ class BaseAlgo(ABC):
             obs, reward, done, info = self.env.step(action.cpu().numpy())
 
             # Update observations over config file 
-            for i in range(len(done)):
-                self.cumulative += reward[i] 
-                if done[i]:
+            for j in range(len(done)):
+                self.cumulative += reward[j] 
+                if done[j]:
                     self.episodes += 1 
                     self.writer.writerow([self.episodes, self.cumulative])
-                    if info[i]["termination"] == -1:
+                    if info[j]["termination"] == -1:
                         config.increase_failure()
-                    elif info[i]["termination"] == 0:
+                    elif info[j]["termination"] == 0:
                         config.increase_exhaust()
                     else:
                         config.increase_success()
 
             # Update experiences values
-
             self.obss[i] = self.obs
             self.obs = obs
             if self.acmodel.recurrent:
@@ -225,9 +224,7 @@ class BaseAlgo(ABC):
         #   - D is the dimensionality.
 
         exps = DictList()
-        exps.obs = [self.obss[i][j]
-                    for j in range(self.num_procs)
-                    for i in range(self.num_frames_per_proc)]
+        exps.obs = [self.obss[i][j] for j in range(self.num_procs) for i in range(self.num_frames_per_proc)]
         if self.acmodel.recurrent:
             # T x P x D -> P x T x D -> (P * T) x D
             exps.memory = self.memories.transpose(0, 1).reshape(-1, *self.memories.shape[2:])
