@@ -9,6 +9,7 @@ import csv
 from torch_ac.format import default_preprocess_obss
 from torch_ac.utils import DictList, ParallelEnv
 
+
 class BaseAlgo(ABC):
     """The base class for RL algorithms."""
 
@@ -84,7 +85,7 @@ class BaseAlgo(ABC):
         shape = (self.num_frames_per_proc, self.num_procs)
 
         self.obs = self.env.reset()
-        self.obss = [None]*(shape[0])
+        self.obss = [None] * (shape[0])
         if self.acmodel.recurrent:
             self.memory = torch.zeros(shape[1], self.acmodel.memory_size, device=self.device)
             self.memories = torch.zeros(*shape, self.acmodel.memory_size, device=self.device)
