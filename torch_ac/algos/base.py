@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
 import torch
 
+import sys
+sys.path.append("..")
+import prologkb.config as config 
+import csv
+
 from torch_ac.format import default_preprocess_obss
 from torch_ac.utils import DictList, ParallelEnv
 
@@ -102,6 +107,13 @@ class BaseAlgo(ABC):
         self.log_reshaped_return = [0] * self.num_procs
         self.log_num_frames = [0] * self.num_procs
 
+        # Create log file of rewards per episode 
+        self.cumulative = 0 
+        self.episodes = 0
+        f = open("../prologkb/cumulative_rewards/" + config.config.currentFile + ".csv", 'w')
+        self.writer = csv.writer(f) 
+        self.writer.writerow(["Episode", "Cumulative"]) # HEADER
+
     def collect_experiences(self):
         """Collects rollouts and computes advantages.
 
@@ -134,7 +146,20 @@ class BaseAlgo(ABC):
                     dist, value = self.acmodel(preprocessed_obs)
             action = dist.sample()
 
-            obs, reward, done, _ = self.env.step(action.cpu().numpy())
+            obs, reward, done, info = self.env.step(action.cpu().numpy())
+
+            # Update observations over config file 
+            for i in range(len(done)):
+                self.cumulative += reward[i] 
+                if done[i]:
+                    self.episodes += 1 
+                    self.writer.writerow([self.episodes, self.cumulative])
+                    if info[i]["termination"] == -1:
+                        config.increase_failure()
+                    elif info[i]["termination"] == 0:
+                        config.increase_exhaust()
+                    else:
+                        config.increase_success()
 
             # Update experiences values
 
